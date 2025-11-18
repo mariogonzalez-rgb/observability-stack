@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # RAVN Observability Stack Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/ravn/observability-stack/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/ravnhq/observability-stack/master/install.sh | bash
 
 set -e
 
 # Configuration
-REPO_URL="https://github.com/ravn/observability-stack"
-REPO_API="https://api.github.com/repos/ravn/observability-stack"
+REPO_URL="https://github.com/ravnhq/observability-stack"
+REPO_API="https://api.github.com/repos/ravnhq/observability-stack"
 INSTALL_DIR="observability"
 BRANCH="master"
 
@@ -196,7 +196,7 @@ print_completion() {
     echo "  • Stop:    cd $INSTALL_DIR && docker-compose down"
     echo "  • Logs:    cd $INSTALL_DIR && docker-compose logs -f"
     echo ""
-    echo "📚 Documentation: https://github.com/ravn/observability-stack"
+    echo "📚 Documentation: https://github.com/ravnhq/observability-stack"
 }
 
 # Main installation
