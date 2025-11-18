@@ -1,0 +1,87 @@
+services:
+  mimir:
+    image: grafana/mimir:latest
+    command: -config.file=/etc/mimir/mimir.yaml
+    ports:
+      - "${MIMIR_PORT:-9009}:${MIMIR_INTERNAL_PORT:-9009}"
+    volumes:
+      - ./config/mimir.yaml:/etc/mimir/mimir.yaml
+      - ./data/mimir:/data
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/loki.yaml
+    ports:
+      - "${LOKI_PORT:-3100}:${LOKI_INTERNAL_PORT:-3100}"
+    volumes:
+      - ./config/loki.yaml:/etc/loki/loki.yaml
+      - ./data/loki:/loki
+    networks:
+      - observability
+
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./config/tempo.yaml:/etc/tempo.yaml
+      - ./data/tempo:/var/tempo
+    networks:
+      - observability
+
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - /etc/alloy/config.alloy
+    ports:
+      - "${ALLOY_UI_PORT:-12345}:12345"
+      - "${ALLOY_OTLP_GRPC_PORT:-4317}:${ALLOY_OTLP_GRPC_PORT:-4317}"
+    volumes:
+      - ./config/alloy.alloy:/etc/alloy/config.alloy
+    environment:
+      - DB_DSN=${DB_DSN:-}
+      - MIMIR_HOST=${MIMIR_HOST:-mimir}
+      - LOKI_HOST=${LOKI_HOST:-loki}
+      - TEMPO_HOST=${TEMPO_HOST:-tempo}
+      - MIMIR_INTERNAL_PORT=${MIMIR_INTERNAL_PORT:-9009}
+      - LOKI_INTERNAL_PORT=${LOKI_INTERNAL_PORT:-3100}
+      - TEMPO_INTERNAL_PORT=${TEMPO_INTERNAL_PORT:-4317}
+      - ALLOY_OTLP_GRPC_PORT=${ALLOY_OTLP_GRPC_PORT:-4317}
+      - TLS_ENABLED=${TLS_ENABLED:-false}
+    networks:
+      - observability
+    depends_on:
+      - mimir
+      - loki
+      - tempo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "${GRAFANA_PORT:-3030}:${GRAFANA_INTERNAL_PORT:-3000}"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=${GF_AUTH_ANONYMOUS_ENABLED:-true}
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=${GF_AUTH_ANONYMOUS_ORG_ROLE:-Admin}
+      - GF_USERS_DEFAULT_THEME=dark
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - observability
+    depends_on:
+      - mimir
+      - loki
+      - tempo
+
+networks:
+  observability:
+    driver: bridge
