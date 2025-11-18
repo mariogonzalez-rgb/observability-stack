@@ -176,9 +176,9 @@ setup_environment() {
 # Print completion message
 print_completion() {
     echo ""
-    echo -e "${GREEN}════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}══════════════════════════════════════════════${NC}"
     echo -e "${GREEN}         Installation Complete!${NC}"
-    echo -e "${GREEN}════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}══════════════════════════════════════════════${NC}"
     echo ""
     echo "📁 Installation: ./$INSTALL_DIR/"
     if [ ! -z "$GRAFANA_PASSWORD" ]; then

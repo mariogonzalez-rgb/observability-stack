@@ -23,7 +23,7 @@ A standardized, self-hosted observability stack template for modern applications
 ### One-Line Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ravn/observability-stack/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ravnhq/observability-stack/master/install.sh | bash
 ```
 
 This will:
@@ -37,15 +37,15 @@ This will:
 
 ```bash
 # 1. Clone this template for your project
-git clone https://github.com/ravn/observability-stack my-project-observability
+git clone https://github.com/ravnhq/observability-stack my-project-observability
 cd my-project-observability
 
-# 2. Configure environment
-cp .env.example .env
-# Edit .env - set GRAFANA_ADMIN_PASSWORD
+# 2. Configure environment  
+cp src/.env.example src/.env
+# Edit src/.env - set GRAFANA_ADMIN_PASSWORD
 
 # 3. Start the stack
-docker-compose up -d
+cd src && docker-compose up -d
 
 # 4. Access Grafana
 open http://localhost:3030
