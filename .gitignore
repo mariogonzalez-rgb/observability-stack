@@ -1,2 +1,135 @@
+# =============================================================================
+# RAVN Observability Platform - Git Ignore Rules
+# =============================================================================
+
+# Environment and configuration files
+.env
 .env.local
-node_modules
+.env.*
+!.env.example
+!.env.template
+
+# Local data directories
+data/
+logs/
+temp/
+tmp/
+
+# TLS certificates and keys
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+ssl/
+certs/
+tls/
+
+# Secret files
+secrets/
+*secret*
+*password*
+*credential*
+*.secrets
+.secrets
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# Go
+vendor/
+*.exe
+*.exe~
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!terraform.tfvars.example
+.terraform/
+
+# Kubernetes secrets
+*secret*.yaml
+*secret*.yml
+!*secret*.template.*
+!*secret*.example.*
+
+# AWS
+.aws/
+aws-config
+credentials
+
+# GCP
+service-account*.json
+gcp-credentials*.json
+.gcp/
+
+# Azure
+.azure/
+
+# Docker
+.dockerignore
+
+# Grafana
+grafana/data/
+grafana/logs/
+grafana.db
+
+# Loki
+loki/data/
+loki/logs/
+
+# Tempo
+tempo/data/
+tempo/logs/
+
+# Mimir
+mimir/data/
+mimir/logs/
+
+# Monitoring and observability
+pprof/
+*.pprof
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
