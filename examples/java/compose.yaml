@@ -1,0 +1,192 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: userdemo-agent-micrometer-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-userdemo}
+      POSTGRES_USER: ${POSTGRES_USER:-userdemo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-userdemo}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-userdemo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # Spring Boot Application (Agent + Micrometer Observability)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: userdemo-agent-micrometer-app
+    ports:
+      - "${SERVER_PORT:-8081}:8081"
+    environment:
+      # Database Configuration
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-userdemo}
+      DB_USERNAME: ${POSTGRES_USER:-userdemo}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-userdemo}
+
+      # OpenTelemetry Agent Configuration
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-userdemo-agent-micrometer}
+      OTEL_SERVICE_VERSION: ${OTEL_SERVICE_VERSION:-0.0.1}
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-development}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://alloy:4318}
+      OTEL_RESOURCE_ATTRIBUTES: service.name=${OTEL_SERVICE_NAME:-userdemo-agent-micrometer},service.version=${OTEL_SERVICE_VERSION:-0.0.1},deployment.environment=${OTEL_DEPLOYMENT_ENVIRONMENT:-development}
+
+      # MDC Instrumentation for trace correlation in logs
+      OTEL_INSTRUMENTATION_COMMON_MDC_ENABLED: ${OTEL_INSTRUMENTATION_COMMON_MDC_ENABLED:-true}
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ADD_BAGGAGE: ${OTEL_INSTRUMENTATION_LOGBACK_MDC_ADD_BAGGAGE:-true}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+      alloy:
+        condition: service_started
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # PostgreSQL Exporter for Prometheus metrics
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: userdemo-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-userdemo}:${POSTGRES_PASSWORD:-userdemo}@postgres:5432/${POSTGRES_DB:-userdemo}?sslmode=disable"
+    ports:
+      - "9187:9187"  # Postgres exporter metrics endpoint
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # Grafana Alloy - Prometheus Scraper and Metrics Collector
+  alloy:
+    image: grafana/alloy:latest
+    container_name: grafana-alloy
+    ports:
+      - '12345:12345'  # Alloy UI
+      - '4317:4317'    # OTLP gRPC
+      - '4318:4318'    # OTLP HTTP
+    volumes:
+      - ./config/alloy-config.alloy:/etc/alloy/config.alloy:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    depends_on:
+      mimir:
+        condition: service_started
+      postgres-exporter:
+        condition: service_started
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # Grafana Mimir - Metrics Storage (Prometheus-compatible)
+  mimir:
+    image: grafana/mimir:latest
+    container_name: grafana-mimir
+    ports:
+      - '9009:9009'    # Mimir HTTP
+    volumes:
+      - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
+      - ./config/mimir-runtime.yaml:/etc/mimir/runtime.yaml:ro
+      - mimir-data:/data
+    command:
+      - -config.file=/etc/mimir/mimir.yaml
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # Grafana Loki - Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: grafana-loki
+    user: "0:0"  # Run as root to avoid permission issues with volumes
+    ports:
+      - '3100:3100'    # Loki HTTP
+    volumes:
+      - ./config/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # Grafana Tempo - Distributed Tracing
+  tempo:
+    image: grafana/tempo:latest
+    container_name: grafana-tempo
+    ports:
+      - '3200:3200'    # Tempo HTTP
+      - '9411:9411'    # Zipkin receiver
+    volumes:
+      - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # Grafana - Visualization and Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3030:3000'    # Grafana UI
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - mimir
+      - loki
+      - tempo
+    networks:
+      - observability
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local
+  mimir-data:
+    driver: local
+  loki-data:
+    driver: local
+  tempo-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  observability:
+    driver: bridge
