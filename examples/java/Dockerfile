@@ -4,9 +4,11 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
+# Copy pom.xml first for dependency caching
+COPY pom.xml ./
+
+# Generate Maven wrapper files automatically
+RUN mvn wrapper:wrapper
 
 # Download dependencies (cached layer)
 RUN ./mvnw dependency:go-offline -B
