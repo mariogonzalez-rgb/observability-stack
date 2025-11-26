@@ -2,6 +2,8 @@ package co.ravn.userdemo.service;
 
 import java.util.List;
 
+import co.ravn.userdemo.model.Company;
+import co.ravn.userdemo.model.Country;
 import co.ravn.userdemo.model.User;
 import co.ravn.userdemo.repository.UserRepository;
 
@@ -17,20 +19,69 @@ public class UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private final CountryService countryService;
+    private final CompanyService companyService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, CountryService countryService, CompanyService companyService) {
         this.userRepository = userRepository;
+        this.countryService = countryService;
+        this.companyService = companyService;
     }
 
     @Transactional
-    public User create(String name) {
-        LOGGER.info("Creating user with name='{}'", name);
+    public User create(String name, Long countryId, Long companyId) {
+        LOGGER.info("Creating user with name='{}', countryId={}, companyId={}", name, countryId, companyId);
+
+        Country country = this.countryService.findById(countryId);
+        if (country == null) {
+            LOGGER.error("Cannot create user: country with id={} does not exist", countryId);
+            throw new IllegalArgumentException("Invalid countryId: " + countryId);
+        }
+
+        Company company = this.companyService.findById(companyId);
+        if (company == null) {
+            LOGGER.error("Cannot create user: company with id={} does not exist", companyId);
+            throw new IllegalArgumentException("Invalid companyId: " + companyId);
+        }
+
         try {
-            User user = this.userRepository.save(new User(null, name));
-            LOGGER.info("User created successfully: id={}, name='{}'", user.id(), user.name());
+            User user = this.userRepository.save(new User(null, name, countryId, companyId));
+            LOGGER.info("User created successfully: id={}, name='{}', countryId={}, companyId={}", user.id(), user.name(), user.countryId(), user.companyId());
             return user;
         } catch (Exception e) {
-            LOGGER.error("Failed to create user with name='{}'", name, e);
+            LOGGER.error("Failed to create user with name='{}', countryId={}, companyId={}", name, countryId, companyId, e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public User update(Long id, String name, Long countryId, Long companyId) {
+        LOGGER.info("Updating user with id={}, name='{}', countryId={}, companyId={}", id, name, countryId, companyId);
+
+        User existing = findWithId(id);
+        if (existing == null) {
+            LOGGER.error("Cannot update user: user with id={} does not exist", id);
+            throw new IllegalArgumentException("User not found: " + id);
+        }
+
+        Country country = this.countryService.findById(countryId);
+        if (country == null) {
+            LOGGER.error("Cannot update user: country with id={} does not exist", countryId);
+            throw new IllegalArgumentException("Invalid countryId: " + countryId);
+        }
+
+        Company company = this.companyService.findById(companyId);
+        if (company == null) {
+            LOGGER.error("Cannot update user: company with id={} does not exist", companyId);
+            throw new IllegalArgumentException("Invalid companyId: " + companyId);
+        }
+
+        try {
+            User updated = this.userRepository.save(new User(id, name, countryId, companyId));
+            LOGGER.info("User updated successfully: id={}, name='{}', countryId={}, companyId={}", updated.id(), updated.name(), updated.countryId(), updated.companyId());
+            return updated;
+        } catch (Exception e) {
+            LOGGER.error("Failed to update user with id={}", id, e);
             throw e;
         }
     }

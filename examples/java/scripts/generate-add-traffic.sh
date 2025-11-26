@@ -67,8 +67,17 @@ while true; do
     # Get timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
+    # Randomly select from valid country/company IDs
+    # IDs 1-3 correspond to seed data: USA, Canada, Germany and their respective companies
+    country_ids=(1 2 3)
+    company_ids=(1 2 3)
+    random_country_index=$((RANDOM % ${#country_ids[@]}))
+    random_company_index=$((RANDOM % ${#company_ids[@]}))
+    country_id="${country_ids[$random_country_index]}"
+    company_id="${company_ids[$random_company_index]}"
+
     # Create JSON payload
-    json_payload=$(printf '{"name":"%s"}' "$user_name")
+    json_payload=$(printf '{"name":"%s","countryId":%d,"companyId":%d}' "$user_name" "$country_id" "$company_id")
 
     # Make POST request and capture response code
     response=$(curl -s -w "\n%{http_code}" \
@@ -84,7 +93,7 @@ while true; do
     # Log the request
     if [ "$http_code" = "201" ]; then
         successful_requests=$((successful_requests + 1))
-        user_id=$(echo "$response_body" | grep -o '"id":[0-9]*' | cut -d':' -f2)
+        user_id=$(echo "$response_body" | grep -o '"id":[0-9]*' | head -n 1 | cut -d':' -f2)
         echo -e "${GREEN}[${timestamp}]${NC} POST /api/users - Status: ${http_code} - Created: id=${user_id}, name='${user_name}'"
     elif [ "$http_code" = "400" ]; then
         failed_requests=$((failed_requests + 1))

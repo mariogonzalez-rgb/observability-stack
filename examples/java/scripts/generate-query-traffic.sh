@@ -8,7 +8,7 @@ set -e
 # Configuration
 API_URL="${API_URL:-http://localhost:8081}"
 MIN_USER_ID="${MIN_USER_ID:-1}"
-MAX_USER_ID="${MAX_USER_ID:-200}"
+MAX_USER_ID="${MAX_USER_ID:-50}"
 MIN_DELAY_MS="${MIN_DELAY_MS:-100}"
 MAX_DELAY_MS="${MAX_DELAY_MS:-2000}"
 
@@ -68,7 +68,7 @@ while true; do
     # Log the request
     if [ "$http_code" = "200" ]; then
         successful_requests=$((successful_requests + 1))
-        user_name=$(echo "$response_body" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+        user_name=$(echo "$response_body" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | paste -sd "," -)
         echo -e "${GREEN}[${timestamp}]${NC} GET /api/${user_id} - Status: ${http_code} - User: ${user_name}"
     elif [ "$http_code" = "404" ]; then
         successful_requests=$((successful_requests + 1))
