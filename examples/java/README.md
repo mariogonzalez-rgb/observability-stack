@@ -1168,7 +1168,7 @@ Ensure you have:
 
 ```bash
 # Navigate to project directory
-cd userdemo-agent-micrometer
+cd /examples/java
 
 # Optional: Create environment file
 cp .env.example .env
