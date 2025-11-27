@@ -2,13 +2,96 @@ services:
   mimir:
     image: grafana/mimir:latest
     container_name: grafana-mimir
-    command: -config.file=/etc/mimir/mimir.yaml
+    command: ["-config.file=/etc/mimir/mimir.yaml", "-config.expand-env=true"]
     ports:
       - "${MIMIR_PORT:-9009}:${MIMIR_INTERNAL_PORT:-9009}"
     volumes:
       - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
       - ./config/mimir-runtime.yaml:/etc/mimir/runtime.yaml:ro
       - mimir-data:/data
+    environment:
+      # Server configuration
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MULTITENANCY_ENABLED=${MULTITENANCY_ENABLED:-false}
+
+      # Storage configuration
+      - STORAGE_TYPE=${STORAGE_TYPE:-filesystem}
+      - MIMIR_DATA_PATH=${MIMIR_DATA_PATH:-/data}
+
+      # S3 Storage (if using S3)
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET_METRICS=${S3_BUCKET_METRICS}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_SSE_TYPE=${S3_SSE_TYPE:-SSE-S3}
+      - S3_KMS_KEY_ID=${S3_KMS_KEY_ID}
+
+      # GCS Storage (if using GCS)
+      - GCS_BUCKET_METRICS=${GCS_BUCKET_METRICS}
+      - GCS_SERVICE_ACCOUNT=${GCS_SERVICE_ACCOUNT}
+
+      # Distributor configuration
+      - HA_TRACKER_ENABLED=${HA_TRACKER_ENABLED:-false}
+      - KVSTORE_TYPE=${KVSTORE_TYPE:-inmemory}
+
+      # Ingester configuration
+      - MIMIR_REPLICATION_FACTOR=${MIMIR_REPLICATION_FACTOR:-1}
+      - MIMIR_HEARTBEAT_PERIOD=${MIMIR_HEARTBEAT_PERIOD:-5s}
+      - MIMIR_HEARTBEAT_TIMEOUT=${MIMIR_HEARTBEAT_TIMEOUT:-1m}
+      - ZONE_AWARENESS_ENABLED=${ZONE_AWARENESS_ENABLED:-false}
+
+      # Compactor configuration
+      - MIMIR_COMPACTION_INTERVAL=${MIMIR_COMPACTION_INTERVAL:-30m}
+      - MIMIR_CLEANUP_INTERVAL=${MIMIR_CLEANUP_INTERVAL:-15m}
+      - MIMIR_TENANT_CLEANUP_DELAY=${MIMIR_TENANT_CLEANUP_DELAY:-6h}
+      - MIMIR_DELETION_DELAY=${MIMIR_DELETION_DELAY:-12h}
+      - MIMIR_FIRST_LEVEL_COMPACTION_WAIT=${MIMIR_FIRST_LEVEL_COMPACTION_WAIT:-25m}
+      - MIMIR_MAX_CLOSING_BLOCKS=${MIMIR_MAX_CLOSING_BLOCKS:-2}
+      - MIMIR_MAX_OPENING_BLOCKS=${MIMIR_MAX_OPENING_BLOCKS:-4}
+      - MIMIR_BLOCK_SYNC_CONCURRENCY=${MIMIR_BLOCK_SYNC_CONCURRENCY:-20}
+      - MIMIR_META_SYNC_CONCURRENCY=${MIMIR_META_SYNC_CONCURRENCY:-20}
+
+      # Querier configuration
+      - QUERIER_MAX_CONCURRENT=${QUERIER_MAX_CONCURRENT:-20}
+      - QUERIER_TIMEOUT=${QUERIER_TIMEOUT:-2m}
+      - QUERIER_MAX_SAMPLES=${QUERIER_MAX_SAMPLES:-50000000}
+      - QUERIER_DEFAULT_EVALUATION_INTERVAL=${QUERIER_DEFAULT_EVALUATION_INTERVAL:-1m}
+
+      # Query scheduler configuration
+      - QUERY_SCHEDULER_MAX_OUTSTANDING=${QUERY_SCHEDULER_MAX_OUTSTANDING:-256}
+
+      # Ruler configuration
+      - ALERTMANAGER_URL=${ALERTMANAGER_URL:-http://alertmanager:9093}
+      - MIMIR_HOST=${MIMIR_HOST:-mimir}
+
+      # Limits configuration
+      - MIMIR_INGESTION_RATE=${MIMIR_INGESTION_RATE:-50000}
+      - MIMIR_INGESTION_BURST=${MIMIR_INGESTION_BURST:-100000}
+      - MIMIR_MAX_GLOBAL_SERIES=${MIMIR_MAX_GLOBAL_SERIES:-1500000}
+      - MIMIR_MAX_GLOBAL_SERIES_PER_METRIC=${MIMIR_MAX_GLOBAL_SERIES_PER_METRIC:-0}
+      - MIMIR_MAX_GLOBAL_METADATA=${MIMIR_MAX_GLOBAL_METADATA:-8000}
+      - MIMIR_MAX_GLOBAL_METADATA_PER_METRIC=${MIMIR_MAX_GLOBAL_METADATA_PER_METRIC:-10}
+      - MIMIR_MAX_GLOBAL_EXEMPLARS=${MIMIR_MAX_GLOBAL_EXEMPLARS:-100000}
+      - MIMIR_MAX_QUERY_PARALLELISM=${MIMIR_MAX_QUERY_PARALLELISM:-240}
+      - MIMIR_MAX_LABEL_NAME_LENGTH=${MIMIR_MAX_LABEL_NAME_LENGTH:-1024}
+      - MIMIR_MAX_LABEL_VALUE_LENGTH=${MIMIR_MAX_LABEL_VALUE_LENGTH:-4096}
+      - MIMIR_MAX_LABEL_NAMES_PER_SERIES=${MIMIR_MAX_LABEL_NAMES_PER_SERIES:-30}
+      - MIMIR_MAX_METADATA_LENGTH=${MIMIR_MAX_METADATA_LENGTH:-1024}
+
+      # Native histograms
+      - NATIVE_HISTOGRAMS_ENABLED=${NATIVE_HISTOGRAMS_ENABLED:-true}
+
+      # Activity tracker
+      - ACTIVITY_TRACKER_MAX_ENTRIES=${ACTIVITY_TRACKER_MAX_ENTRIES:-1024}
+
+      # Usage statistics
+      - USAGE_STATS_ENABLED=${USAGE_STATS_ENABLED:-false}
+
+      # Runtime configuration
+      - MIMIR_RUNTIME_CONFIG=${MIMIR_RUNTIME_CONFIG:-/etc/mimir/runtime.yaml}
+
+      # Cluster domain (for external URLs)
+      - CLUSTER_DOMAIN=${CLUSTER_DOMAIN:-localhost}
     networks:
       - observability
     restart: unless-stopped
