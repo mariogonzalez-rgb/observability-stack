@@ -17,7 +17,7 @@ services:
     image: grafana/loki:latest
     container_name: grafana-loki
     user: "0:0"  # Run as root to avoid permission issues with volumes
-    command: -config.file=/etc/loki/local-config.yaml
+    command: ["-config.expand-env=true","-config.file=/etc/loki/local-config.yaml"]
     ports:
       - "${LOKI_PORT:-3100}:${LOKI_INTERNAL_PORT:-3100}"
     volumes:
