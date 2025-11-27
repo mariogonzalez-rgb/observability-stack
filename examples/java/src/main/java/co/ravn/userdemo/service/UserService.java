@@ -21,11 +21,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final CountryService countryService;
     private final CompanyService companyService;
+    private final UserMetricsService userMetricsService;
 
-    public UserService(UserRepository userRepository, CountryService countryService, CompanyService companyService) {
+    public UserService(UserRepository userRepository, CountryService countryService, CompanyService companyService, UserMetricsService userMetricsService) {
         this.userRepository = userRepository;
         this.countryService = countryService;
         this.companyService = companyService;
+        this.userMetricsService = userMetricsService;
     }
 
     @Transactional
@@ -46,6 +48,7 @@ public class UserService {
 
         try {
             User user = this.userRepository.save(new User(null, name, countryId, companyId));
+            this.userMetricsService.recordUserCreated(countryId, companyId);
             LOGGER.info("User created successfully: id={}, name='{}', countryId={}, companyId={}", user.id(), user.name(), user.countryId(), user.companyId());
             return user;
         } catch (Exception e) {
@@ -78,6 +81,7 @@ public class UserService {
 
         try {
             User updated = this.userRepository.save(new User(id, name, countryId, companyId));
+            this.userMetricsService.recordUserUpdated(existing.countryId(), existing.companyId(), countryId, companyId);
             LOGGER.info("User updated successfully: id={}, name='{}', countryId={}, companyId={}", updated.id(), updated.name(), updated.countryId(), updated.companyId());
             return updated;
         } catch (Exception e) {
@@ -89,8 +93,17 @@ public class UserService {
     @Transactional
     public void delete(long id) {
         LOGGER.info("Deleting user with id={}", id);
+
+        // Fetch user before deletion to update metrics
+        User existing = findWithId(id);
+        if (existing == null) {
+            LOGGER.warn("Cannot delete user: user with id={} does not exist", id);
+            return;
+        }
+
         try {
             this.userRepository.deleteById(id);
+            this.userMetricsService.recordUserDeleted(existing.countryId(), existing.companyId());
             LOGGER.info("User deleted successfully: id={}", id);
         } catch (Exception e) {
             LOGGER.error("Failed to delete user with id={}", id, e);

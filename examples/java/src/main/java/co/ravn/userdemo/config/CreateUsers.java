@@ -29,6 +29,14 @@ public class CreateUsers implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Check if data already exists to avoid duplicates
+        if (!this.countryService.listAll().isEmpty()) {
+            LOGGER.info("Countries already exist, skipping data initialization");
+            return;
+        }
+
+        LOGGER.info("Initializing database with sample data...");
+
         // Create countries
         Country usa = this.countryService.create("United States");
         LOGGER.info("USA country created with id {}", usa.id());
@@ -64,5 +72,7 @@ public class CreateUsers implements CommandLineRunner {
 
         User stephane = this.userService.create("Stephane", canada.id(), techCo.id());
         LOGGER.info("Stephane has id {}", stephane.id());
+
+        LOGGER.info("Sample data initialization completed");
     }
 }
