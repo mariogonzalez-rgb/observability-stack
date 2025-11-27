@@ -237,32 +237,18 @@ docker-compose logs alloy | grep "spring_app"
 ### 2. compose.yaml
 **Location**: `/compose.yaml`
 **Purpose**: Defines entire observability stack
-**Key sections**:
-- Lines 38-48: OTel Agent environment variables
-- Lines 84-105: Alloy configuration
-- Lines 156-176: Grafana with datasource provisioning
 
 ### 3. alloy-config.alloy
 **Location**: `/config/alloy-config.alloy`
 **Purpose**: Alloy telemetry pipeline configuration
-**Key sections**:
-- Lines 4-16: OTLP receiver
-- Lines 20-26: Batch processor
-- Lines 81-95: Prometheus scraping for Spring Boot
 
 ### 4. grafana-datasources.yaml
 **Location**: `/config/grafana-datasources.yaml`
 **Purpose**: Auto-provision Grafana datasources with correlation
-**Key sections**:
-- Lines 24-30: Loki → Tempo correlation (derivedFields)
-- Lines 40-49: Tempo → Loki correlation (tracesToLogs)
 
 ### 5. application.properties
 **Location**: `/src/main/resources/application.properties`
 **Purpose**: Spring Boot configuration
-**Key settings**:
-- Line 10: Expose Prometheus endpoint
-- Lines 5-7: Database connection (uses env vars)
 
 ### 6. logback-spring.xml
 **Location**: `/src/main/resources/logback-spring.xml`
@@ -273,8 +259,8 @@ docker-compose logs alloy | grep "spring_app"
 **Location**: `/pom.xml`
 **Purpose**: Maven dependencies
 **Key dependencies**:
-- Lines 33-37: Spring Boot Actuator
-- Lines 39-42: Micrometer Prometheus registry
+- Spring Boot Actuator
+- Micrometer Prometheus registry
 
 [Back to Table of Contents](#table-of-contents)
 
@@ -430,14 +416,14 @@ Unlike default metrics that work automatically, custom metrics require code chan
 ```java
 // BAD - Creates millions of unique metric combinations
 Counter.builder("orders.total")
-       .tag("user_id", userId)        // ❌ Unique per user
+       .tag("user.id", userId)        // ❌ Unique per user
        .tag("timestamp", timestamp)   // ❌ Unique per second
        .register(meterRegistry);
 
 // GOOD - Uses categorical tags
 Counter.builder("orders.total")
        .tag("region", "us-east")      // ✅ Limited values
-       .tag("payment_method", "card") // ✅ Limited values
+       .tag("payment.method", "card") // ✅ Limited values
        .register(meterRegistry);
 ```
 
