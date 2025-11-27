@@ -32,7 +32,7 @@ services:
     container_name: grafana-tempo
     command: -config.file=/etc/tempo/tempo.yaml
     ports:
-      - "${TEMPO_PORT:-3200}:${TEMPO_INTERNAL_PORT:-3200}"
+      - "${TEMPO_PORT:-3200}:${TEMPO_INTERNAL_PORT:-4317}"
     volumes:
       - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
@@ -54,6 +54,16 @@ services:
       - "${ALLOY_OTLP_HTTP_PORT:-4318}:${ALLOY_OTLP_HTTP_PORT:-4318}"
     volumes:
       - ./config/alloy-config.alloy:/etc/alloy/config.alloy:ro
+    environment:
+      - DB_DSN=${DB_DSN:-}
+      - MIMIR_HOST=${MIMIR_HOST:-mimir}
+      - LOKI_HOST=${LOKI_HOST:-loki}
+      - TEMPO_HOST=${TEMPO_HOST:-tempo}
+      - MIMIR_INTERNAL_PORT=${MIMIR_INTERNAL_PORT:-9009}
+      - LOKI_INTERNAL_PORT=${LOKI_INTERNAL_PORT:-3100}
+      - TEMPO_INTERNAL_PORT=${TEMPO_INTERNAL_PORT:-4317}
+      - ALLOY_OTLP_GRPC_PORT=${ALLOY_OTLP_GRPC_PORT:-4317}
+      - TLS_ENABLED=${TLS_ENABLED:-false}
     depends_on:
       mimir:
         condition: service_started

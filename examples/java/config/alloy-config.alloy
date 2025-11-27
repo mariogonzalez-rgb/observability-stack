@@ -30,34 +30,35 @@ otelcol.exporter.prometheus "mimir" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
 
+// Prometheus remote write configuration
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://" + env("MIMIR_HOST") + ":" + env("MIMIR_INTERNAL_PORT") + "/api/v1/push"
+  }
+}
+
 // Exporter: Logs to Loki
 otelcol.exporter.loki "default" {
   forward_to = [loki.write.default.receiver]
 }
 
+// Loki write configuration
+loki.write "default" {
+  endpoint {
+    url = "http://" + env("LOKI_HOST") + ":" + env("LOKI_INTERNAL_PORT") + "/loki/api/v1/push"
+  }
+}
+
 // Exporter: Traces to Tempo
 otelcol.exporter.otlp "tempo" {
   client {
-    endpoint = "tempo:4317"
+    endpoint = env("TEMPO_HOST") + ":" + env("TEMPO_INTERNAL_PORT")
     tls {
-      insecure = true
+      insecure = env("TLS_ENABLED") == "false"
     }
   }
 }
 
-// Prometheus remote write configuration
-prometheus.remote_write "mimir" {
-  endpoint {
-    url = "http://mimir:9009/api/v1/push"
-  }
-}
-
-// Loki write configuration
-loki.write "default" {
-  endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
-  }
-}
 
 // Scrape job for PostgreSQL metrics via postgres_exporter
 prometheus.scrape "postgres" {
@@ -67,7 +68,7 @@ prometheus.scrape "postgres" {
       "job"         = "postgresql",
       "environment" = "dev",
       "service"     = "userdemo-postgres",
-      "database"    = "userdemo",
+      "database"    = env("POSTGRES_DB"),
     },
   ]
 
@@ -94,9 +95,9 @@ prometheus.scrape "spring_app" {
   metrics_path    = "/actuator/prometheus"
 }
 
-// Optional: Enable live debugging
+// Optional: Enable live debugging (only for development)
 livedebugging {
-  enabled = true
+  enabled = false
 }
 
 // Optional: Logging configuration for debugging
