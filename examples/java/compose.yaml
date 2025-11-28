@@ -2,7 +2,7 @@ services:
   mimir:
     image: grafana/mimir:latest
     container_name: grafana-mimir
-    command: ["-config.file=/etc/mimir/mimir.yaml", "-config.expand-env=true"]
+    command: ["-config.expand-env=true", "-config.file=/etc/mimir/mimir.yaml"]
     ports:
       - "${MIMIR_PORT:-9009}:${MIMIR_INTERNAL_PORT:-9009}"
     volumes:
@@ -121,7 +121,7 @@ services:
       - LOKI_COMPACTION_INTERVAL=${LOKI_COMPACTION_INTERVAL:-10m}
       - LOKI_COMPACTION_ENABLED=${LOKI_COMPACTION_ENABLED:-true}
       - LOKI_RETENTION_DELETE_DELAY=${LOKI_RETENTION_DELETE_DELAY:-2h}
-      - RULE_STORAGE_MODE=${RULE_STORAGE_MODE:-local}
+      - STORAGE_MODE=${STORAGE_MODE:-local}
       - ALERTMANAGER_URL=${ALERTMANAGER_URL:-http://alertmanager:9093}
       - LOKI_RETENTION_HOURS=${LOKI_RETENTION_HOURS:-168}
       - LOKI_INGESTION_RATE_MB=${LOKI_INGESTION_RATE_MB:-4}
@@ -141,12 +141,74 @@ services:
   tempo:
     image: grafana/tempo:latest
     container_name: grafana-tempo
-    command: -config.file=/etc/tempo/tempo.yaml
+    command: ["-config.expand-env=true", "-config.file=/etc/tempo/tempo.yaml"]
     ports:
       - "${TEMPO_PORT:-3200}:${TEMPO_INTERNAL_PORT:-4317}"
     volumes:
       - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
+    environment:
+      # Server configuration
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MULTITENANCY_ENABLED=${MULTITENANCY_ENABLED:-false}
+
+      # OTLP receiver ports
+      - ALLOY_OTLP_GRPC_PORT=${ALLOY_OTLP_GRPC_PORT:-4317}
+      - ALLOY_OTLP_HTTP_PORT=${ALLOY_OTLP_HTTP_PORT:-4318}
+
+      # Ring/KV store configuration
+      - KVSTORE_TYPE=${KVSTORE_TYPE:-inmemory}
+
+      # Ingester configuration
+      - TEMPO_TRACE_IDLE_PERIOD=${TEMPO_TRACE_IDLE_PERIOD:-10s}
+      - TEMPO_MAX_BLOCK_BYTES=${TEMPO_MAX_BLOCK_BYTES:-1000000}
+      - TEMPO_MAX_BLOCK_DURATION=${TEMPO_MAX_BLOCK_DURATION:-5m}
+      - TEMPO_REPLICATION_FACTOR=${TEMPO_REPLICATION_FACTOR:-1}
+
+      # Storage configuration
+      - STORAGE_MODE=${STORAGE_MODE:-local}
+      - TEMPO_DATA_PATH=${TEMPO_DATA_PATH:-/var/tempo}
+
+      # S3 Storage (if using S3)
+      - S3_BUCKET_TRACES=${S3_BUCKET_TRACES}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_PART_SIZE=${S3_PART_SIZE:-5242880}
+
+      # GCS Storage (if using GCS)
+      - GCS_BUCKET_TRACES=${GCS_BUCKET_TRACES}
+      - GCS_CHUNK_BUFFER_SIZE=${GCS_CHUNK_BUFFER_SIZE:-10485760}
+
+      # Compactor configuration
+      - TEMPO_RETENTION_HOURS=${TEMPO_RETENTION_HOURS:-336}
+      - TEMPO_COMPACTED_BLOCK_RETENTION=${TEMPO_COMPACTED_BLOCK_RETENTION:-1h}
+      - TEMPO_COMPACTION_WINDOW=${TEMPO_COMPACTION_WINDOW:-1h}
+      - TEMPO_MAX_COMPACTION_OBJECTS=${TEMPO_MAX_COMPACTION_OBJECTS:-1000000}
+      - TEMPO_RETENTION_CONCURRENCY=${TEMPO_RETENTION_CONCURRENCY:-10}
+
+      # Querier configuration
+      - TEMPO_SEARCH_QUERY_TIMEOUT=${TEMPO_SEARCH_QUERY_TIMEOUT:-30s}
+
+      # Query frontend configuration
+      - TEMPO_SEARCH_DURATION_SLO=${TEMPO_SEARCH_DURATION_SLO:-5s}
+      - TEMPO_SEARCH_THROUGHPUT_SLO=${TEMPO_SEARCH_THROUGHPUT_SLO:-1073741824}
+      - TEMPO_TRACE_BY_ID_SHARDS=${TEMPO_TRACE_BY_ID_SHARDS:-50}
+
+      # Metrics generator configuration
+      - CLUSTER_NAME=${CLUSTER_NAME:-local}
+      - ENVIRONMENT=${ENVIRONMENT:-local}
+      - MIMIR_HOST=${MIMIR_HOST:-mimir}
+      - MIMIR_INTERNAL_PORT=${MIMIR_INTERNAL_PORT:-9009}
+      - DEFAULT_TENANT=${DEFAULT_TENANT:-anonymous}
+
+      # Overrides
+      - TEMPO_MAX_TRACES_PER_USER=${TEMPO_MAX_TRACES_PER_USER:-50000}
+      - TEMPO_INGESTION_RATE_STRATEGY=${TEMPO_INGESTION_RATE_STRATEGY:-global}
+      - TEMPO_INGESTION_RATE_MB=${TEMPO_INGESTION_RATE_MB:-100}
+      - TEMPO_INGESTION_BURST_MB=${TEMPO_INGESTION_BURST_MB:-200}
+      - TEMPO_MAX_SEARCH_DURATION=${TEMPO_MAX_SEARCH_DURATION:-0s}
+      - TEMPO_MAX_BYTES_PER_TRACE=${TEMPO_MAX_BYTES_PER_TRACE:-5000000}
     networks:
       - observability
     restart: unless-stopped

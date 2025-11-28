@@ -80,7 +80,7 @@ ruler:
     # type: ${STORAGE_TYPE:-filesystem}
     # filesystem:
     #   dir: ${LOKI_DATA_PATH:-/loki}/rules
-    type: ${RULE_STORAGE_MODE:-local}
+    type: ${STORAGE_MODE:-local}
     local:
       directory: ${LOKI_DATA_PATH:-/loki}/rules
     s3:
