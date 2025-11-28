@@ -6,8 +6,8 @@ services:
     ports:
       - "${MIMIR_PORT:-9009}:${MIMIR_INTERNAL_PORT:-9009}"
     volumes:
-      - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
-      - ./config/mimir-runtime.yaml:/etc/mimir/runtime.yaml:ro
+      - ./observability/mimir.yaml:/etc/mimir/mimir.yaml:ro
+      - ./observability/mimir-runtime.yaml:/etc/mimir/runtime.yaml:ro
       - mimir-data:/data
     environment:
       # Server configuration
@@ -104,7 +104,7 @@ services:
     ports:
       - "${LOKI_PORT:-3100}:${LOKI_INTERNAL_PORT:-3100}"
     volumes:
-      - ./config/loki.yaml:/etc/loki/local-config.yaml:ro
+      - ./observability/loki.yaml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
@@ -145,7 +145,7 @@ services:
     ports:
       - "${TEMPO_PORT:-3200}:${TEMPO_INTERNAL_PORT:-4317}"
     volumes:
-      - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
     environment:
       # Server configuration
@@ -226,7 +226,7 @@ services:
       - "${ALLOY_OTLP_GRPC_PORT:-4317}:${ALLOY_OTLP_GRPC_PORT:-4317}"
       - "${ALLOY_OTLP_HTTP_PORT:-4318}:${ALLOY_OTLP_HTTP_PORT:-4318}"
     volumes:
-      - ./config/alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - ./observability/alloy.alloy:/etc/alloy/config.alloy:ro
     environment:
       - DB_DSN=${DB_DSN:-}
       - MIMIR_HOST=${MIMIR_HOST:-mimir}
@@ -258,7 +258,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
-      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - grafana-data:/var/lib/grafana
     networks:
       - observability
