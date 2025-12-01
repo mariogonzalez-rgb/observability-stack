@@ -96,9 +96,9 @@ prometheus.scrape "spring_app" {
 }
 
 // Optional: Enable live debugging (only for development)
-livedebugging {
-  enabled = false
-}
+// livedebugging {
+//   enabled = true
+// }
 
 // Optional: Logging configuration for debugging
 // logging {
