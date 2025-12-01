@@ -8,7 +8,7 @@ services:
     volumes:
       - ./observability/mimir.yaml:/etc/mimir/mimir.yaml:ro
       - ./observability/mimir-runtime.yaml:/etc/mimir/runtime.yaml:ro
-      - mimir-data:/data
+      - ./observability/data/mimir:/data
     environment:
       # Server configuration
       - LOG_LEVEL=${LOG_LEVEL:-info}
@@ -105,7 +105,7 @@ services:
       - "${LOKI_PORT:-3100}:${LOKI_INTERNAL_PORT:-3100}"
     volumes:
       - ./observability/loki.yaml:/etc/loki/local-config.yaml:ro
-      - loki-data:/loki
+      - ./observability/data/loki:/loki
     environment:
       # Server & Common Configuration
       - LOG_LEVEL=${LOG_LEVEL:-info}
@@ -158,7 +158,7 @@ services:
       - "${TEMPO_PORT:-3200}:${TEMPO_INTERNAL_PORT:-4317}"
     volumes:
       - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
-      - tempo-data:/var/tempo
+      - ./observability/data/tempo:/var/tempo
     environment:
       # Server configuration
       - LOG_LEVEL=${LOG_LEVEL:-info}
@@ -271,7 +271,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-      - grafana-data:/var/lib/grafana
+      - ./observability/data/grafana:/var/lib/grafana
     networks:
       - observability
     depends_on:
@@ -361,17 +361,8 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-
 volumes:
   postgres-data:
-    driver: local
-  mimir-data:
-    driver: local
-  loki-data:
-    driver: local
-  tempo-data:
-    driver: local
-  grafana-data:
     driver: local
 
 networks:
